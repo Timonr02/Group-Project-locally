@@ -1,0 +1,40 @@
+Sara:
+e.g. delete raw data after 7 days -> speak with yaman or all the guys
+also compression e.g. after 2 days already
+e.g. cmms needs average temperature of last 6 monts. so we could do with continuous aggregate like 5 min or 1h average. and than after 6 monts they will be deleted
+
+Grafana needs to be in the k8s cluster and acces directly to mqtt or restapi. if you want to see grafana dashboard later than you need to type e.g. 10.0.0.50/grafana or 10.0.0.50/docs to see swagger docu. therfore we need metallb and nginx.
+
+
+Data Ingest:
+-Write Dockerfile
+-Could add Metadate from sensors when needed (Norm Timestamps, convert datatypes, errors-handling like "NaN", map machine ids, ...) to structure data as we like it
+-SQL Insert
+-MQTT Publish (paho-mqtt) and connect e.g. to mqtt-broker.default.svc.cluster.local:1883 and publish data to different Topics e.g. shopfloor/maschine1/Temperatur as JSON. Define the different Topics 
+-Write Deployment.yaml with the Image 
+-Environment Variables Need to be secret because of e.g. the Password of the database. Keep in mind to give in the insert.py Environment variables and not like Password="postgres" (K8s Admin Needs to create configmap and k8s secret for dbms Password (DB_DSN)
+
+Data Storage:
+-K8s Admin: CloudNativePG Operator for HA in K8s cluster and PVCs/Storage Classes
+-Write SQL script so that when the TSDB starts for the first time, it creates tables, hypertables, user, ...)
+-Write Cluster.yaml (With Timescale Image, 2 nodes (Primary+Replica)) (Read-Write-Split: Primary only for writing, and Replica only for reading)
+
+Historical Data Layer:
+-Write Dockerfile
+-Write SQL-Selects to the replica-node, JSON-Response from the TSDB to send it back to the Business / App Layer
+-Swagger UI should be generated automaticly under /docs
+-Write Deployment.yaml, Service.yaml, Ingress.yaml to forword the inquiry to the FastAPI-Service
+
+Infrastructure Services (It's all task for K8s Admin):
+-Install finished installationspackages in the infra Namespace (MetalLB, NGINX, MQTTBroker/RESTAPI?) via helm-charts (package-manager)
+-Configure IP Pool for MetalLB
+-Configure Load Balancer for Port 1883 e.g.
+
+Live Data Layer:
+-K8s Admin: e.g. deploy Mosquitto over Helm
+
+
+ARCHITECTURE NOTES: 
+-K8s Admin: K8s one namespace for e.g infra (NGINX, MetalLB), data-backend (TSDB, Ingest, FastAPI), apps (CMMS, MES)
+-K8s Admin: K8s pods are STATELESS & scaled 
+-TimescaleDB is STATEFUL & redundant
