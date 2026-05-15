@@ -1,6 +1,5 @@
 import logging
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,32 +12,15 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage application startup and shutdown events.
-
-    Args:
-        app: FastAPI application instance.
-
-    Yields:
-        Control back to the application.
-    """
-    logger.info("Starting up application")
-    try:
-        await DatabasePoolManager.initialize()
-        logger.info("Application startup complete")
-    except Exception as e:
-        logger.error(f"Application startup failed: {e}")
-        raise
-
+    """Manage application startup and shutdown events."""
+    await DatabasePoolManager.initialize()
     yield
-
-    logger.info("Shutting down application")
     await DatabasePoolManager.close()
-    logger.info("Application shutdown complete")
 
 
 app = FastAPI(
     title="Digital Factory Data API",
-    description="Industrial IoT data management API. Supports reading aggregated sensor data and inserting new measurements from external systems and AAS.",
+    description="Industrial IoT data management API. Supports reading aggregated sensor data and inserting new measurements.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -47,10 +29,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(sensor_data.router)
-
-logger.info("FastAPI application configured")
