@@ -1,3 +1,41 @@
+One Route for all GET /api/v1/machines/{machine_id}/metrics
+
+numeric numbers as float/double and not string. Only status like "RUNNING", "ERROR" are as String
+
+Flattining instead of hieracly structure
+[
+  {
+    "timestamp": "2026-05-15T10:00:00Z",
+    "sensor_name": "temperature",
+    "value": 45.2
+  },
+  {
+    "timestamp": "2026-05-15T10:00:00Z",
+    "sensor_name": "vibration",
+    "value": 1.2
+  }
+]
+
+ASS/CMMS:
+POST /api/v1/analytics/asset-health
+[
+  {
+    "machine_id": "laser_01",
+    "health_score": 85.5,
+    "predicted_failure_days": 14,
+    "timestamp": "2026-05-15T10:00:00Z"
+  },
+  {
+    "machine_id": "cnc_02",
+    "health_score": 92.0,
+    "predicted_failure_days": 40,
+    "timestamp": "2026-05-15T10:00:00Z"
+  }
+]
+
+
+
+
 Sara:
 e.g. delete raw data after 7 days -> speak with yaman or all the guys
 also compression e.g. after 2 days already
