@@ -7,9 +7,9 @@ import asyncio
 from asyncua import Server, ua
 from asyncua.common.methods import uamethod
 
-from ingest.Laser_Control.laser import Laser
-from ingest.Server.orders import Orders
-from ingest.Generate_Gcode.Generate_Gcode import Generate_Gcode
+from Laser_Control.laser import Laser
+from Server.orders import Orders
+from Generate_Gcode.Generate_Gcode import Generate_Gcode
 import random
 
 

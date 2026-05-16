@@ -6,9 +6,9 @@ import webbrowser
 
 import PIL.Image, PIL.ImageTk
 
-from ingest.Client.opcua_client import Laser
-from ingest.Generate_Gcode.Generate_Gcode import Generate_Gcode
-from ingest.Preview_Gcode.preview_gcode import GCodePreview
+from Client.opcua_client import Laser
+from Generate_Gcode.Generate_Gcode import Generate_Gcode
+from Preview_Gcode.preview_gcode import GCodePreview
 
 PATH = os.path.dirname(os.path.abspath(__file__)) + "/"
 

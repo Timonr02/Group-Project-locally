@@ -23,6 +23,16 @@ class DataProcessor:
         return SensorData(timestamp, machine_id, sensor_name, cleaned_value)
 
     def _clean_value(self, raw_value: Any) -> Optional[float]:
+        """Convert raw OPC UA values to float. Skip lists, dicts, complex objects, convert bools to 1.0/0.0, and try numeric conversion."""
+        if raw_value is None:
+            return None
+        
+        if isinstance(raw_value, (list, dict)) or (hasattr(raw_value, '__dict__') and not isinstance(raw_value, (bool, int, float))):
+            return None
+        
+        if isinstance(raw_value, bool):
+            return 1.0 if raw_value else 0.0
+        
         try:
             val = float(raw_value)
             if math.isnan(val) or math.isinf(val):

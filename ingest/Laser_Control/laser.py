@@ -4,7 +4,7 @@ import serial
 from time import sleep, time
 import os
 import websocket
-from ingest.Preview_Gcode.preview_gcode import GCodePreview
+from Preview_Gcode.preview_gcode import GCodePreview
 
 DOWN = 255
 UP = 230

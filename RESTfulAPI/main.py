@@ -19,8 +19,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Digital Factory Data API",
-    description="Industrial IoT data management API. Supports reading aggregated sensor data and inserting new measurements.",
+    title="Digital Factory Sensor Rest API",
+    description="RESTful API for managing and retrieving sensor data in a digital factory environment.",
     version="1.0.0",
     lifespan=lifespan,
 )
