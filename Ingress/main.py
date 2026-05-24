@@ -45,16 +45,32 @@ class IngestionService:
         logger.info(f"Connecting to OPC UA Server: {self.config.opcua_url}")
         async with Client(url=self.config.opcua_url) as opc_client:
             logger.info("OPC UA connection established")
-            subscription = await opc_client.create_subscription(500, self.handler)
-            
-            for node_id in self.config.node_mapping.keys():
+
+            dynamic_mapping = {}
+            nodes_to_subscribe = []
+
+            for path_str, (machine_id, sensor_name) in self.config.node_paths.items():
                 try:
-                    node = opc_client.get_node(node_id)
-                    await subscription.subscribe_data_change(node)
-                    logger.info(f"Subscribed to node: {node_id}")
+                    path_list = path_str.split("/")
+
+                    node = await opc_client.nodes.root.get_child(path_list)
+
+                    current_node_id = node.nodeid.to_string()
+
+                    dynamic_mapping[current_node_id] = (machine_id, sensor_name)
+                    nodes_to_subscribe.append(node)
+
                 except Exception as e:
-                    logger.warning(f"Could not subscribe to {node_id}: {e}")
+                    logger.warning(f"Could not find node at path {path_str}: {e}")
+
+            self.processor.node_mapping = dynamic_mapping
             
+            subscription = await opc_client.create_subscription(self.config.subscription_interval_ms, self.handler)
+
+            for node in nodes_to_subscribe:
+                await subscription.subscribe_data_change(node)
+                logger.info(f"Subscribed to: {node.nodeid.to_string()}")
+
             while True:
                 await asyncio.sleep(1)
 

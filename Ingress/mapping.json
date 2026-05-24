@@ -1,0 +1,7 @@
+{
+  "0:Objects/2:laser_module/2:status/2:is_running": ["laser_01", "is_running"],
+  "0:Objects/2:laser_module/2:status/2:progress": ["laser_01", "progress"],
+  "0:Objects/3:UR5_Robot/3:status/3:position": ["ur5_robot", "position"]
+}
+
+// Namespace anpassen. Oject 0 ist meistens Standard 0.
