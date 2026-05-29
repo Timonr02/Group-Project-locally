@@ -10,6 +10,11 @@ services:
       - "5433:5432"
     volumes:
       - timescaledb-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   mqtt-broker:
     image: eclipse-mosquitto:latest
@@ -18,5 +23,33 @@ services:
       - "1883:1883"
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  rest-api:
+    build: ./RESTfulAPI
+    container_name: rest-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./RESTfulAPI/.env
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      mqtt-broker:
+        condition: service_started
+    
+  ingress-api:
+    build: ./Ingress
+    container_name: ingress-api
+    env_file:
+      - ./Ingress/.env
+    volumes:
+      - ./Ingress/mapping.json:/app/mapping.json
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      mqtt-broker:
+        condition: service_started
+
+
 volumes:
   timescaledb-data:

@@ -1,15 +1,15 @@
 import asyncio
+import os
 from asyncua import Client
 
 async def list_nodes():
     """List all available nodes from OPC UA server"""
-    url = "opc.tcp://127.0.0.1:4840/laser/"
+    url = os.getenv("OPCUA_URL", "opc.tcp://127.0.0.1:4840/laser/")
     
     async with Client(url=url) as client:
         print("Connected to OPC UA Server")
         print("=" * 60)
         
-        # Get root object
         root = client.get_root_node()
         objects = client.get_objects_node()
         

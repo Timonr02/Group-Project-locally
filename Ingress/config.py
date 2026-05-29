@@ -18,7 +18,7 @@ class AppConfig:
         self.opcua_url = os.getenv("OPCUA_URL", "opc.tcp://127.0.0.1:4840/laser/")
         self.subscription_interval_ms = int(os.getenv("SUBSCRIPTION_INTERVAL_MS", "500"))
         
-        self.node_paths = self._load_mapping_file("mapping.json")
+        self.node_mapping = self._load_mapping_file("mapping.json")
 
     def _load_mapping_file(self, filepath: str) -> Dict[str, Tuple[str, str]]:
         try:

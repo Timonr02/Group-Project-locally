@@ -49,7 +49,7 @@ class IngestionService:
             dynamic_mapping = {}
             nodes_to_subscribe = []
 
-            for path_str, (machine_id, sensor_name) in self.config.node_paths.items():
+            for path_str, (machine_id, sensor_name) in self.config.node_mapping.items():
                 try:
                     path_list = path_str.split("/")
 
