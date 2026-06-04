@@ -7,9 +7,10 @@ from models import SensorData
 logger = logging.getLogger(__name__)
 
 class DataProcessor:
-    """Processes, cleans, and normalizes raw OPC UA data."""
+    """Processes, cleans, and normalizes raw OPC UA data for a specific module."""
 
-    def __init__(self, node_mapping: Dict[str, Tuple[str, str]]) -> None:
+    def __init__(self, module_name: str, node_mapping: Dict[str, Tuple[str, str]]) -> None:
+        self.module_name = module_name
         self.node_mapping = node_mapping
 
     def process(self, node_id: str, raw_value: Any, source_ts: Any, server_ts: Any) -> Optional[SensorData]:
