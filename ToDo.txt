@@ -2,6 +2,8 @@ One Route for all GET /api/v1/machines/{machine_id}/metrics
 
 numeric numbers as float/double and not string. Only status like "RUNNING", "ERROR" are as String
 
+
+
 Flattining instead of hieracly structure
 [
   {
