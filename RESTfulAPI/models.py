@@ -23,3 +23,37 @@ class SensorDataInsert(BaseModel):
     timestamp: Optional[datetime] = Field(
         default=None, description="Optional UTC timestamp. Defaults to now if omitted."
     )
+
+
+class SensorMetric(BaseModel):
+    """Response model for raw sensor metrics."""
+
+    timestamp: datetime = Field(..., description="UTC timestamp of the measurement")
+    sensor_name: str = Field(..., description="Name of the sensor")
+    value: float = Field(..., description="Sensor value")
+
+
+class MetricsResponse(BaseModel):
+    """Response model for metrics query endpoint."""
+
+    metrics: list[SensorMetric] = Field(..., description="List of sensor metrics")
+    count: int = Field(..., description="Total number of metrics returned")
+    query_params: dict = Field(..., description="Echo of the query parameters used")
+
+
+class CMmsDataInsert(BaseModel):
+    """Request model for CMMS data."""
+
+    machine_id: str
+    metric_name: str
+    value: float
+    timestamp: Optional[datetime] = None
+
+
+class CMmsDataResponse(BaseModel):
+    """Response model for CMMS data."""
+
+    time: datetime
+    machine_id: str
+    metric_name: str
+    value: float

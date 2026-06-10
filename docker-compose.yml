@@ -10,6 +10,7 @@ services:
       - "5433:5432"
     volumes:
       - timescaledb-data:/var/lib/postgresql
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -37,13 +38,13 @@ services:
       mqtt-broker:
         condition: service_started
     
-  ingress-api:
-    build: ./Ingress
-    container_name: ingress-api
+  ingest-api:
+    build: ./Ingest
+    container_name: ingest-api
     env_file:
-      - ./Ingress/.env
+      - ./Ingest/.env
     volumes:
-      - ./Ingress/mapping.json:/app/mapping.json
+      - ./Ingest/mapping.json:/app/mapping.json
     depends_on:
       timescaledb:
         condition: service_healthy

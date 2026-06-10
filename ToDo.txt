@@ -1,3 +1,9 @@
+
+10.06.2026:
+current_job_name change maybe to only id so it can be saved as numeric. or parse in numeric and save the actual jobs to a reference tabele and with JOIN to combine them when needed from grafana. so its nevertheless performant.
+
+
+
 One Route for all GET /api/v1/machines/{machine_id}/metrics
 
 numeric numbers as float/double and not string. Only status like "RUNNING", "ERROR" are as String

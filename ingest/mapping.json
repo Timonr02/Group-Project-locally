@@ -1,0 +1,28 @@
+{
+  "modules": {
+    "laser_01": {
+      "url": "opc.tcp://192.168.156.120:4840/laser/",
+      "table_name": "laser_data",
+      "nodes": {
+        "ns=2;s=is_connected": {"name": "is_connected", "hot_path": true},
+        "ns=2;s=is_mcu_connected": {"name": "is_mcu_connected", "hot_path": true},
+        "ns=2;s=is_running": {"name": "is_running", "hot_path": true},
+        "ns=2;s=is_fan_on": {"name": "is_fan_on", "hot_path": true},
+        "ns=2;s=card_ready_for_engraving": {"name": "card_ready_for_engraving", "hot_path": true},
+        "ns=2;s=card_ready_for_removal": {"name": "card_ready_for_removal", "hot_path": true},
+        "ns=2;s=current_job_name": {"name": "current_job_name", "hot_path": false},
+        "ns=2;s=progress": {"name": "progress", "hot_path": true},
+        "ns=2;s=count_finished_card": {"name": "count_finished_card", "hot_path": false},
+        "ns=2;s=last_job_duration_s": {"name": "last_job_duration_s", "hot_path": false},
+        "ns=2;s=machine_on_duration_s": {"name": "machine_on_duration_s", "hot_path": false},
+        "ns=2;s=total_engraving_duration_s": {"name": "total_engraving_duration_s", "hot_path": false}
+      }
+    },
+    "delta_robot": {
+      "url": "opc.tcp://192.168.156.140:4840/Delta_robot/",
+      "table_name": "delta_robot_data",
+      "nodes": {
+      }
+    }
+  }
+}
