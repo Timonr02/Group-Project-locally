@@ -39,12 +39,12 @@ services:
         condition: service_started
     
   ingest-api:
-    build: ./Ingest
+    build: ./ingest
     container_name: ingest-api
     env_file:
-      - ./Ingest/.env
+      - ./ingest/.env
     volumes:
-      - ./Ingest/mapping.json:/app/mapping.json
+      - ./ingest/mapping.json:/app/mapping.json
     depends_on:
       timescaledb:
         condition: service_healthy
