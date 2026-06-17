@@ -5,7 +5,7 @@ from models import SensorData
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    """Manages PostgreSQL connection for data insertion."""
+    """Manages PostgreSQL connection for data insertion with automatic routing."""
 
     def __init__(self, dsn: str) -> None:
         self.dsn = dsn
@@ -22,16 +22,23 @@ class DatabaseManager:
             raise
 
     def insert(self, data: SensorData, table_name: str) -> None:
-        """Insert sensor data into the specified table."""
+        """Insert sensor data into the specified table or route to machine_events if it is a string."""
         if not self.conn:
             return
 
         try:
             with self.conn.cursor() as cur:
-                cur.execute(
-                    f"INSERT INTO {table_name} (time, sensor_name, value) VALUES (%s, %s, %s)",
-                    (data.timestamp, data.sensor_name, data.value),
-                )
+                if isinstance(data.value, str):
+                    machine_id = table_name.replace("_data", "")
+                    cur.execute(
+                        "INSERT INTO machine_events (time, machine_id, event_name, message) VALUES (%s, %s, %s, %s)",
+                        (data.timestamp, machine_id, data.sensor_name, data.value),
+                    )
+                else:
+                    cur.execute(
+                        f"INSERT INTO {table_name} (time, sensor_name, value) VALUES (%s, %s, %s)",
+                        (data.timestamp, data.sensor_name, data.value),
+                    )
         except psycopg2.Error as e:
             logger.error(f"Data insertion failed for {table_name}: {e}")
 

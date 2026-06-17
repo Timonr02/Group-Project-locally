@@ -23,12 +23,12 @@ class DataProcessor:
 
         return SensorData(timestamp, sensor_name, cleaned_value, hot_path)
 
-    def _clean_value(self, raw_value: Any, node_id: str = "unknown") -> Optional[float]:
-        """Convert raw OPC UA values to float. Skip lists, dicts, complex objects, convert bools to 1.0/0.0, and try numeric conversion."""
+    def _clean_value(self, raw_value: Any, node_id: str = "unknown") -> Optional[Any]:
+        """Convert raw OPC UA values. Bool -> 1.0/0.0, numeric -> float, strings -> remain str, other -> None."""
         if raw_value is None:
             return None
         
-        if isinstance(raw_value, (list, dict)) or (hasattr(raw_value, '__dict__') and not isinstance(raw_value, (bool, int, float))):
+        if isinstance(raw_value, (list, dict)) or (hasattr(raw_value, '__dict__') and not isinstance(raw_value, (bool, int, float, str))):
             logger.warning(f"[{self.module_name}] Node {node_id}: Unsupported data type {type(raw_value).__name__}, value discarded: {raw_value}")
             return None
         
@@ -36,13 +36,18 @@ class DataProcessor:
             return 1.0 if raw_value else 0.0
         
         try:
+            if isinstance(raw_value, str) and not raw_value.replace('.', '', 1).replace('-', '', 1).isdigit():
+                return raw_value
+            
             val = float(raw_value)
             if math.isnan(val) or math.isinf(val):
-                logger.warning(f"[{self.module_name}] Node {node_id}: Invalid numeric value (NaN or Inf), discarded: {raw_value}")
+                logger.warning(f"[{self.module_name}] Node {node_id}: Invalid numeric value (NaN or Inf), discarded")
                 return None
             return val
-        except (ValueError, TypeError) as e:
-            logger.warning(f"[{self.module_name}] Node {node_id}: Failed to convert to numeric - type: {type(raw_value).__name__}, value: {raw_value!r}, error: {e}")
+        except (ValueError, TypeError):
+            if isinstance(raw_value, str):
+                return raw_value
+            logger.warning(f"[{self.module_name}] Node {node_id}: Failed to process type {type(raw_value).__name__}")
             return None
 
     def _normalize_timestamp(self, source_ts: Any, server_ts: Any) -> datetime:

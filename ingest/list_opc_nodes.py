@@ -22,7 +22,6 @@ async def list_nodes():
                 node_id = node.nodeid.to_string()
                 print(f"{prefix}{name.Name:30} | {node_id}")
                 
-                # Get children
                 children = await node.get_children()
                 for child in children:
                     await print_tree(child, prefix + "  ")

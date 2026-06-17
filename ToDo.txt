@@ -1,5 +1,15 @@
 
 16.06.2026
+sara needs to add also machine events table so we can save strings seperatly
+CREATE TABLE IF NOT EXISTS machine_events (
+    time TIMESTAMPTZ NOT NULL,
+    machine_id VARCHAR(50) NOT NULL,
+    event_name VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_machine_events_lookup 
+ON machine_events (machine_id, event_name, time DESC);
 
 10.06.2026:
 current_job_name change maybe to only id so it can be saved as numeric. or parse in numeric and save the actual jobs to a reference tabele and with JOIN to combine them when needed from grafana. so its nevertheless performant.

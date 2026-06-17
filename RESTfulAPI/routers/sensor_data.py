@@ -1,12 +1,20 @@
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from asyncpg import Connection
 
 from database import DatabasePoolManager
-from models import MetricsResponse, SensorMetric, CMmsDataInsert
+from models import (
+    MetricsResponse, 
+    SensorMetric, 
+    CMMSDataInsert, 
+    CMMSMetricsResponse, 
+    CMMSDataResponse,
+    EventsResponse,
+    MachineEvent
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,9 +67,42 @@ async def get_machine_metrics(
     return MetricsResponse(metrics=metrics, count=len(metrics), query_params={"machine": machine, "sensors": sensor_list})
 
 
+@router.get("/{machine}/events", response_model=EventsResponse)
+async def get_machine_events(
+    machine: str,
+    event_names: Optional[str] = Query(None, description="Comma-separated event names. Leave empty for all."),
+    limit: int = Query(1000, le=10000),
+    db: Connection = Depends(get_db_connection),
+):
+    """Retrieve text/log events from the machine_events table. Example: GET /api/v1/delta_robot/events"""
+    
+    query = "SELECT time, event_name, message FROM machine_events WHERE machine_id = $1"
+    params = [machine]
+    
+    if event_names:
+        event_list = [e.strip() for e in event_names.split(",")]
+        placeholders = ",".join([f"${i+2}" for i in range(len(event_list))])
+        query += f" AND event_name IN ({placeholders})"
+        params.extend(event_list)
+        
+    query += f" ORDER BY time DESC LIMIT ${len(params) + 1}"
+    params.append(limit)
+    
+    rows = await db.fetch(query, *params)
+    events = [
+        MachineEvent(timestamp=r["time"], event_name=r["event_name"], message=r["message"]) 
+        for r in rows
+    ]
+    return EventsResponse(
+        events=events,
+        count=len(events),
+        query_params={"machine": machine, "event_names": event_names}
+    )
+
+
 @router.post("/cmms", status_code=status.HTTP_201_CREATED, summary="Store CMMS/AAS data")
 async def insert_cmms_data(
-    payload: CMmsDataInsert,
+    payload: CMMSDataInsert,
     db: Connection = Depends(get_db_connection),
 ) -> dict:
     """Insert CMMS or AAS data."""
@@ -79,3 +120,36 @@ async def insert_cmms_data(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to insert data")
     
     return {"message": "Data inserted", "machine_id": payload.machine_id}
+
+
+@router.get("/cmms/{machine_id}", response_model=CMMSMetricsResponse)
+async def get_cmms_metrics(
+    machine_id: str,
+    metrics: Optional[str] = Query(None, description="Comma-separated metric names. Leave empty for all."),
+    limit: int = Query(1000, le=10000),
+    db: Connection = Depends(get_db_connection),
+):
+    """Retrieve stored CMMS/AAS metrics for a specific machine. Example: GET /api/v1/cmms/laser_01"""
+    
+    query = "SELECT time, machine_id, metric_name, value FROM cmms_data WHERE machine_id = $1"
+    params = [machine_id]
+    
+    if metrics:
+        metric_list = [m.strip() for m in metrics.split(",")]
+        placeholders = ",".join([f"${i+2}" for i in range(len(metric_list))])
+        query += f" AND metric_name IN ({placeholders})"
+        params.extend(metric_list)
+        
+    query += f" ORDER BY time DESC LIMIT ${len(params) + 1}"
+    params.append(limit)
+    
+    rows = await db.fetch(query, *params)
+    metrics_list = [
+        CMMSDataResponse(
+            time=r["time"],
+            machine_id=r["machine_id"],
+            metric_name=r["metric_name"],
+            value=r["value"]
+        ) for r in rows
+    ]
+    return CMMSMetricsResponse(metrics=metrics_list, count=len(metrics_list))

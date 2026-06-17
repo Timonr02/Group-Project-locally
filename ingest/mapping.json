@@ -6,15 +6,43 @@
       "nodes": {
         "ns=2;s=IsConnected": {"name": "IsConnected", "hot_path": true},
         "ns=2;s=IsMcuConnected": {"name": "IsMcuConnected", "hot_path": true}
-
       }
     },
     "delta_robot": {
       "url": "opc.tcp://192.168.156.125:4840/Delta_robot/",
       "table_name": "delta_robot_data",
       "nodes": {
-        "ns=2;s=IsConnected": {"name": "IsConnected", "hot_path": true},
-        "ns=2;s=IsEnabled": {"name": "IsEnabled", "hot_path": true}
+        "ns=2;s=IsOperatingOkay": {"name": "SystemHealth", "hot_path": true},
+        "ns=2;s=IsMoving": {"name": "RobotMoving", "hot_path": true},
+        "ns=2;s=IsBusy": {"name": "RobotBusy", "hot_path": true},
+        "ns=2;s=IsProgramRunning": {"name": "ProgramRunning", "hot_path": true},
+        "ns=2;s=HasError": {"name": "HasError", "hot_path": true},
+        "ns=2;s=ErrorMessage": {"name": "ErrorMessage", "hot_path": true},
+        "ns=2;s=IsConnected": {"name": "Connected", "hot_path": true},
+        "ns=2;s=IsEnabled": {"name": "Enabled", "hot_path": true},
+        
+        "ns=2;s=CurrentProgramName": {"name": "CurrentProgram", "hot_path": false},
+        "ns=2;s=CurrentProgramStep": {"name": "ProgramStep", "hot_path": false},
+        "ns=2;s=ProgramStepCount": {"name": "TotalSteps", "hot_path": false},
+        "ns=2;s=ProgramProgress": {"name": "ProgramProgress", "hot_path": true},
+        
+        "ns=2;s=X": {"name": "PositionX", "hot_path": true},
+        "ns=2;s=Y": {"name": "PositionY", "hot_path": true},
+        "ns=2;s=Z": {"name": "PositionZ", "hot_path": true},
+        "ns=2;s=Velocity": {"name": "Velocity", "hot_path": true},
+        "ns=2;s=OverrideVelocity": {"name": "OverrideVelocity", "hot_path": false},
+        
+        "ns=2;s=Vacuum": {"name": "VacuumState", "hot_path": true},
+        "ns=2;s=Opening": {"name": "GripperOpening", "hot_path": true},
+        "ns=2;s=IsEndeffectorConnected": {"name": "EndeffectorConnected", "hot_path": true},
+        "ns=2;s=IsEndeffectorMoving": {"name": "EndeffectorMoving", "hot_path": true},
+        
+        "ns=2;s=Voltage": {"name": "Voltage", "hot_path": false},
+        "ns=2;s=CurrentTotal": {"name": "CurrentTotal", "hot_path": false},
+        "ns=2;s=WorkLoad": {"name": "WorkLoad", "hot_path": false},
+        "ns=2;s=JointMotorTemperature1": {"name": "JointMotorTemp1", "hot_path": false},
+        "ns=2;s=JointMotorTemperature2": {"name": "JointMotorTemp2", "hot_path": false},
+        "ns=2;s=JointMotorTemperature3": {"name": "JointMotorTemp3", "hot_path": false}
       }
     }
   }

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -36,12 +36,26 @@ class SensorMetric(BaseModel):
 class MetricsResponse(BaseModel):
     """Response model for metrics query endpoint."""
 
-    metrics: list[SensorMetric] = Field(..., description="List of sensor metrics")
+    metrics: List[SensorMetric] = Field(..., description="List of sensor metrics")
     count: int = Field(..., description="Total number of metrics returned")
     query_params: dict = Field(..., description="Echo of the query parameters used")
 
 
-class CMmsDataInsert(BaseModel):
+class MachineEvent(BaseModel):
+    """Response model for a single machine text event (logs, errors)."""
+    timestamp: datetime = Field(..., description="UTC timestamp of the event")
+    event_name: str = Field(..., description="Name of the event / log type")
+    message: str = Field(..., description="The text message or description")
+
+
+class EventsResponse(BaseModel):
+    """Response model for the events query endpoint."""
+    events: List[MachineEvent] = Field(..., description="List of text events")
+    count: int = Field(..., description="Total number of events returned")
+    query_params: dict = Field(..., description="Echo of query parameters")
+
+
+class CMMSDataInsert(BaseModel):
     """Request model for CMMS data."""
 
     machine_id: str
@@ -50,10 +64,16 @@ class CMmsDataInsert(BaseModel):
     timestamp: Optional[datetime] = None
 
 
-class CMmsDataResponse(BaseModel):
-    """Response model for CMMS data."""
+class CMMSDataResponse(BaseModel):
+    """Response model for single CMMS data entry."""
 
     time: datetime
     machine_id: str
     metric_name: str
     value: float
+
+
+class CMMSMetricsResponse(BaseModel):
+    """Response model for CMMS metrics query."""
+    metrics: List[CMMSDataResponse] = Field(..., description="List of CMMS metrics")
+    count: int = Field(..., description="Total number of entries returned")

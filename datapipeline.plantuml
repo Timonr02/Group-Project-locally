@@ -1,0 +1,63 @@
+@startuml
+autonumber
+skinparam BoxPadding 10
+
+actor "OPC-UA Server" as Server
+box "Ingest Service (Python)" #LightBlue
+    participant "Ingest Main" as Ingest
+    participant "DataProcessor" as Processor
+    participant "DatabaseManager" as DB
+    participant "MqttManager" as MQTT
+end box
+database "TimescaleDB" as Timescale
+queue "MQTT Broker" as Broker
+
+== Path 1: Telemetry Data Ingestion (Boolean / Numeric) ==
+Server -> Ingest: DataChange (raw_value: True / 23.5)
+activate Ingest
+Ingest -> Processor: process(raw_value)
+activate Processor
+note over Processor
+  **Value Normalization Logic:**
+  - If boolean (True/False) -> Cast to float (1.0 / 0.0)
+  - If integer/float (23.5) -> Cast to float (23.5)
+end note
+Processor --> Ingest: SensorData(value=1.0, hot_path=True)
+deactivate Processor
+
+Ingest -> DB: insert(SensorData, "laser_data")
+activate DB
+DB -> Timescale: INSERT INTO laser_data (value=1.0)
+deactivate DB
+
+alt if hot_path == True
+    Ingest -> MQTT: publish(SensorData, "laser_01")
+    activate MQTT
+    MQTT -> Broker: Topic: factory/laser_01/IsConnected\nPayload: {"timestamp": "...", "value": 1.0}
+    deactivate MQTT
+end
+deactivate Ingest
+
+== Path 2: Event Data Ingestion (Text / Strings) ==
+Server -> Ingest: DataChange (raw_value: "Vacuum Failure")
+activate Ingest
+Ingest -> Processor: process(raw_value)
+activate Processor
+note over Processor
+  **Value Normalization Logic:**
+  - If string ("Vacuum Failure") and non-numeric -> Keep as string
+end note
+Processor --> Ingest: SensorData(value="Vacuum Failure", hot_path=True)
+deactivate Processor
+
+Ingest -> DB: insert(SensorData, "delta_robot_data")
+activate DB
+note over DB
+  **Dynamic Table Routing:**
+  - If isinstance(value, str):
+    Redirect query from 'delta_robot_data' to 'machine_events'
+end note
+DB -> Timescale: INSERT INTO machine_events (message="Vacuum Failure")
+deactivate DB
+deactivate Ingest
+@enduml

@@ -1,0 +1,66 @@
+@startuml
+skinparam ComponentStyle rectangle
+skinparam NoteBackgroundColor #lightyellow
+
+package "Physical Shop Floor (OPC UA Servers)" {
+    [Laser Engraver OPC-UA] as LaserOPC
+    [Delta Robot OPC-UA] as RobotOPC
+}
+
+package "Ingest Service (Python Worker)" {
+    [OPC-UA Subscriber] as Sub
+    [Data Processor] as Proc
+    [Database Manager] as DB_Mgr
+    [MQTT Manager] as MQTT_Mgr
+}
+
+database "TimescaleDB (PostgreSQL)" {
+    folder "Telemetry Tables (Hypertables)" {
+        [laser_data]
+        [delta_robot_data]
+    }
+    folder "Event Tables (Standard SQL)" {
+        [machine_events]
+    }
+    folder "CMMS Tables (Standard SQL)" {
+        [cmms_data]
+    }
+}
+
+node "MQTT Broker (Mosquitto)" as Broker
+
+package "RESTful API (FastAPI)" {
+    [API Routers / Endpoints] as API
+}
+
+package "Consumers / Clients" {
+    [Grafana Dashboard] as Grafana
+    [External CMMS System] as CMMS_Sys
+}
+
+LaserOPC --> Sub : Raw OPC-UA values
+RobotOPC --> Sub
+Sub --> Proc : Raw data (Any)
+Proc --> DB_Mgr : Cleaned SensorData
+Proc --> MQTT_Mgr : If hot_path == True
+
+DB_Mgr --> [laser_data] : Numeric/Float (DOUBLE PRECISION)
+DB_Mgr --> [delta_robot_data] : Numeric/Float (DOUBLE PRECISION)
+DB_Mgr --> [machine_events] : Text/Strings (TEXT)
+
+MQTT_Mgr --> Broker : MQTT Publish
+
+Grafana --> API : HTTP GET (Retrieve data)
+CMMS_Sys --> API : HTTP POST (Store OEE) / HTTP GET (Query OEE)
+
+API --> [laser_data] : Read
+API --> [delta_robot_data] : Read
+API --> [machine_events] : Read
+API --> [cmms_data] : Read & Write
+
+note bottom of Grafana
+  Grafana reads from the database 
+  strictly via the FastAPI REST API 
+  (no direct database bypass!).
+end note
+@enduml
