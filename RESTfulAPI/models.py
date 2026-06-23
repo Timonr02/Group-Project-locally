@@ -53,27 +53,3 @@ class EventsResponse(BaseModel):
     events: List[MachineEvent] = Field(..., description="List of text events")
     count: int = Field(..., description="Total number of events returned")
     query_params: dict = Field(..., description="Echo of query parameters")
-
-
-class CMMSDataInsert(BaseModel):
-    """Request model for CMMS data."""
-
-    machine_id: str
-    metric_name: str
-    value: float
-    timestamp: Optional[datetime] = None
-
-
-class CMMSDataResponse(BaseModel):
-    """Response model for single CMMS data entry."""
-
-    time: datetime
-    machine_id: str
-    metric_name: str
-    value: float
-
-
-class CMMSMetricsResponse(BaseModel):
-    """Response model for CMMS metrics query."""
-    metrics: List[CMMSDataResponse] = Field(..., description="List of CMMS metrics")
-    count: int = Field(..., description="Total number of entries returned")

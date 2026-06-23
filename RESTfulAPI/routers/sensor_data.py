@@ -9,9 +9,6 @@ from database import DatabasePoolManager
 from models import (
     MetricsResponse, 
     SensorMetric, 
-    CMMSDataInsert, 
-    CMMSMetricsResponse, 
-    CMMSDataResponse,
     EventsResponse,
     MachineEvent
 )
@@ -98,58 +95,3 @@ async def get_machine_events(
         count=len(events),
         query_params={"machine": machine, "event_names": event_names}
     )
-
-
-@router.post("/cmms", status_code=status.HTTP_201_CREATED, summary="Store CMMS/AAS data")
-async def insert_cmms_data(
-    payload: CMMSDataInsert,
-    db: Connection = Depends(get_db_connection),
-) -> dict:
-    """Insert CMMS or AAS data."""
-    timestamp = payload.timestamp or datetime.now(timezone.utc)
-    
-    query = """
-        INSERT INTO cmms_data (time, machine_id, metric_name, value)
-        VALUES ($1, $2, $3, $4)
-    """
-    
-    try:
-        await db.execute(query, timestamp, payload.machine_id, payload.metric_name, payload.value)
-    except Exception as e:
-        logger.error(f"Failed to insert CMMS data: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to insert data")
-    
-    return {"message": "Data inserted", "machine_id": payload.machine_id}
-
-
-@router.get("/cmms/{machine_id}", response_model=CMMSMetricsResponse)
-async def get_cmms_metrics(
-    machine_id: str,
-    metrics: Optional[str] = Query(None, description="Comma-separated metric names. Leave empty for all."),
-    limit: int = Query(1000, le=10000),
-    db: Connection = Depends(get_db_connection),
-):
-    """Retrieve stored CMMS/AAS metrics for a specific machine. Example: GET /api/v1/cmms/laser_01"""
-    
-    query = "SELECT time, machine_id, metric_name, value FROM cmms_data WHERE machine_id = $1"
-    params = [machine_id]
-    
-    if metrics:
-        metric_list = [m.strip() for m in metrics.split(",")]
-        placeholders = ",".join([f"${i+2}" for i in range(len(metric_list))])
-        query += f" AND metric_name IN ({placeholders})"
-        params.extend(metric_list)
-        
-    query += f" ORDER BY time DESC LIMIT ${len(params) + 1}"
-    params.append(limit)
-    
-    rows = await db.fetch(query, *params)
-    metrics_list = [
-        CMMSDataResponse(
-            time=r["time"],
-            machine_id=r["machine_id"],
-            metric_name=r["metric_name"],
-            value=r["value"]
-        ) for r in rows
-    ]
-    return CMMSMetricsResponse(metrics=metrics_list, count=len(metrics_list))
