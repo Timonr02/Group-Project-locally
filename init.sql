@@ -1,6 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
-
 DROP MATERIALIZED VIEW IF EXISTS laser_5min_avg CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS delta_robot_5min_avg CASCADE;
 
@@ -10,12 +9,11 @@ DROP VIEW IF EXISTS machine_oee CASCADE;
 DROP TABLE IF EXISTS machine_events CASCADE;
 DROP TABLE IF EXISTS laser_data CASCADE;
 DROP TABLE IF EXISTS delta_robot_data CASCADE;
-DROP TABLE IF EXISTS cmms_data CASCADE;
-DROP TABLE IF EXISTS sensor_data CASCADE;
+DROP TABLE IF EXISTS energy_meter_data CASCADE;
+DROP TABLE IF EXISTS injection_molding_data CASCADE;
 
 
 CREATE TABLE laser_data (
-
     time TIMESTAMPTZ NOT NULL,
     sensor_name TEXT NOT NULL,
     value DOUBLE PRECISION NOT NULL,
@@ -82,23 +80,63 @@ SELECT add_retention_policy(
 );
 
 
-
-CREATE TABLE cmms_data (
+CREATE TABLE energy_meter_data (
     time TIMESTAMPTZ NOT NULL,
-    machine_id TEXT NOT NULL,
-    metric_name TEXT NOT NULL,
-    value DOUBLE PRECISION,
-    PRIMARY KEY (time, machine_id, metric_name)
+    sensor_name  TEXT NOT NULL,
+    value DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY (time, sensor_name)
 );
 
-CREATE INDEX IF NOT EXISTS idx_cmms_machine_time
-ON cmms_data (machine_id, time DESC);
+SELECT create_hypertable(
+    'energy_meter_data',
+    'time',
+    if_not_exists => TRUE
+);
 
-CREATE INDEX IF NOT EXISTS idx_cmms_machine
-ON cmms_data(machine_id);
+CREATE INDEX IF NOT EXISTS idx_energy_meter
+ON energy_meter_data(sensor_name);
 
-CREATE INDEX IF NOT EXISTS idx_cmms_metric
-ON cmms_data(metric_name);
+ALTER TABLE energy_meter_data
+SET (
+    timescaledb.compress,
+    timescaledb.compress_segmentby = 'sensor_name'
+);
+
+SELECT add_compression_policy(
+    'energy_meter_data',
+    INTERVAL '2 days'
+);
+
+SELECT add_retention_policy(
+    'energy_meter_data',
+    INTERVAL '30 days'
+);
+
+
+CREATE TABLE injection_molding_data (
+    time TIMESTAMPTZ NOT NULL,
+    sensor_name TEXT NOT NULL,
+    value DOUBLE PRECISION,
+    PRIMARY KEY (time, sensor_name)
+);
+
+SELECT create_hypertable(
+    'injection_molding_data',
+    'time',
+    if_not_exists => TRUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_injection_sensor
+ON injection_molding_data(sensor_name);
+
+ALTER TABLE injection_molding_data
+SET (
+    timescaledb.compress,
+    timescaledb.compress_segmentby = 'sensor_name'
+);
+
+SELECT add_compression_policy('injection_molding_data', INTERVAL '2 days');
+SELECT add_retention_policy('injection_molding_data', INTERVAL '30 days');
 
 
 
@@ -110,55 +148,53 @@ CREATE TABLE machine_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_machine_events_lookup
-ON machine_events (machine_id, event_name, time DESC);
+ON machine_events(machine_id, event_name, time DESC);
 
 
 
 CREATE VIEW machine_oee AS
 
 WITH latest AS (
-    SELECT DISTINCT ON (machine_id, metric_name)
-        machine_id,
-        metric_name,
+    SELECT DISTINCT ON (sensor_name)
+        sensor_name,
         value
-    FROM cmms_data
-    ORDER BY machine_id, metric_name, time DESC
+    FROM injection_molding_data
+    ORDER BY sensor_name, time DESC
 ),
 
 data AS (
     SELECT
-        machine_id,
+        'wittmann_imm'::TEXT AS machine_id,
 
         MAX(value) FILTER (
-            WHERE metric_name = 'LastCycleTime'
+            WHERE sensor_name = 'LastCycleTime'
         ) AS last_cycle_time,
 
         MAX(value) FILTER (
-            WHERE metric_name = 'AverageCycleTime'
+            WHERE sensor_name = 'AverageCycleTime'
         ) AS average_cycle_time,
 
         MAX(value) FILTER (
-            WHERE metric_name = 'ActualOperatingTime'
+            WHERE sensor_name = 'ActualOperatingTime'
         ) AS actual_operating_time,
 
         MAX(value) FILTER (
-            WHERE metric_name = 'PlannedProductionTime'
+            WHERE sensor_name = 'PlannedProductionTime'
         ) AS planned_production_time,
 
         MAX(value) FILTER (
-            WHERE metric_name = 'IdealCycleTime'
+            WHERE sensor_name = 'IdealCycleTime'
         ) AS ideal_cycle_time,
 
         MAX(value) FILTER (
-            WHERE metric_name = 'GoodParts'
+            WHERE sensor_name = 'GoodParts'
         ) AS good_parts,
 
         MAX(value) FILTER (
-            WHERE metric_name = 'BadParts'
+            WHERE sensor_name = 'BadParts'
         ) AS bad_parts
 
     FROM latest
-    GROUP BY machine_id
 ),
 
 calc AS (
@@ -248,7 +284,6 @@ WITH (timescaledb.continuous) AS
 SELECT
     time_bucket('5 minutes', time) AS bucket,
     sensor_name,
-
     AVG(value) AS avg_value,
     MIN(value) AS min_value,
     MAX(value) AS max_value,
@@ -283,7 +318,6 @@ WITH (timescaledb.continuous) AS
 SELECT
     time_bucket('5 minutes', time) AS bucket,
     sensor_name,
-
     AVG(value) AS avg_value,
     MIN(value) AS min_value,
     MAX(value) AS max_value,
@@ -309,6 +343,7 @@ CALL refresh_continuous_aggregate(
     NOW() - INTERVAL '1 hour',
     NOW()
 );
+
 
 
 DO $$
@@ -347,6 +382,7 @@ END IF;
 END $$;
 
 
+
 GRANT INSERT ON machine_events TO ingest_role;
 GRANT SELECT, INSERT ON machine_events TO egress_role;
 GRANT SELECT ON machine_events TO grafana_role;
@@ -359,9 +395,13 @@ GRANT INSERT ON delta_robot_data TO ingest_role;
 GRANT SELECT, INSERT ON delta_robot_data TO egress_role;
 GRANT SELECT ON delta_robot_data TO grafana_role;
 
-GRANT INSERT ON cmms_data TO ingest_role;
-GRANT SELECT, INSERT ON cmms_data TO egress_role;
-GRANT SELECT ON cmms_data TO grafana_role;
+GRANT INSERT ON energy_meter_data TO ingest_role;
+GRANT SELECT, INSERT ON energy_meter_data TO egress_role;
+GRANT SELECT ON energy_meter_data TO grafana_role;
+
+GRANT INSERT ON injection_molding_data TO ingest_role;
+GRANT SELECT, INSERT ON injection_molding_data TO egress_role;
+GRANT SELECT ON injection_molding_data TO grafana_role;
 
 GRANT SELECT ON laser_5min_avg TO grafana_role;
 GRANT SELECT ON delta_robot_5min_avg TO grafana_role;
@@ -375,4 +415,3 @@ GRANT SELECT ON calc_oee TO egress_role;
 
 SELECT * FROM machine_oee;
 SELECT * FROM calc_oee;
-```

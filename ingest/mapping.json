@@ -94,7 +94,7 @@
         "ns=2;s=total_current": {"name": "TotalCurrent", "hot_path": true}
       }
     },
-    "injection_molding": {
+    "wittmann_imm": {
       "url": "opc.tcp://192.168.156.130:4840/",
       "table_name": "injection_molding_data",
       "nodes": {
